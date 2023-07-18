@@ -5,8 +5,10 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
 
 	"drexel.edu/todo/db"
+	"github.com/spf13/cobra"
 )
 
 // Global variables to hold the command line flags to drive the todo CLI
@@ -44,19 +46,35 @@ const (
 //		 flags.  The flag package is not very flexible and can lead to
 //		 some confusing code.
 
-//			 REQUIRED:     Study the code below, and make sure you understand
-//						   how it works.  Go online and readup on how the
-//						   flag package works.  Then, write a nice comment
-//				  		   block to document this function that highights that
-//						   you understand how it works.
+//	 REQUIRED:     Study the code below, and make sure you understand
+//				   how it works.  Go online and readup on how the
+//				   flag package works.  Then, write a nice comment
+//		  		   block to document this function that highights that
+//				   you understand how it works.
 //
-//			 EXTRA CREDIT: The best CLI and command line processor for
-//						   go is called Cobra.  Refactor this function to
-//						   use it.  See github.com/spf13/cobra for information
-//						   on how to use it.
+//	 EXTRA CREDIT: The best CLI and command line processor for
+//				   go is called Cobra.  Refactor this function to
+//				   use it.  See github.com/spf13/cobra for information
+//				   on how to use it.
 //
-//	 YOUR ANSWER: <GOES HERE>
-func processCmdLineFlags() (AppOptType, error) {
+// YOUR ANSWER: processCmdLineFlags is a function that parses the command-line
+// flags for our CLI application using the built-in flag package in Go.
+// The function defines and handles several command-line options (flags) that
+// the user can provide when running the CLI. It first defines multiple flags
+// using `flag.StringVar`, `flag.BoolVar`, and `flag.IntVar` functions.
+// Each flag corresponds to a specific operation (list, query, add, update, delete)
+// that the user can select while executing the CLI. After defining the flags,
+// flag.Parse() is called to scan and parse the command-line arguments provided
+// by the user. The values for the defined flags are then assigned to the
+// associated variables. If no flags are set, the function displays the flag
+// usage and returns an error. Next, the function uses flag.Visit to loop over
+// the defined flags and determine which operation was selected by the user.
+// Based on the selected operation, the appOpt variable is set accordingly.
+// If the selected operation is invalid or not implemented, the function will
+// also print an error message, the flag usage, and returns an error. If a valid
+// argument is provided, the function will finally return the corresponding
+// appOpt with no error(nil).
+func unrefactoredProcessCmdLineFlags() (AppOptType, error) {
 	flag.StringVar(&dbFileNameFlag, "db", "./data/todo.json", "Name of the database file")
 
 	flag.BoolVar(&listFlag, "l", false, "List all the items in the database")
@@ -105,7 +123,11 @@ func processCmdLineFlags() (AppOptType, error) {
 		case "s":
 			//For extra credit you will need to change some things here
 			//and also in main under the CHANGE_ITEM_STATUS case
-			appOpt = CHANGE_ITEM_STATUS
+			if queryFlag != 0 {
+				appOpt = CHANGE_ITEM_STATUS
+			} else {
+				fmt.Println("Error: ", errors.New("-s option is only valid if the -q option is also set"))
+			}
 		default:
 			appOpt = INVALID_APP_OPT
 		}
@@ -114,6 +136,103 @@ func processCmdLineFlags() (AppOptType, error) {
 	if appOpt == INVALID_APP_OPT || appOpt == NOT_IMPLEMENTED {
 		fmt.Println("Invalid option set or the desired option is not currently implemented")
 		flag.Usage()
+		return appOpt, errors.New("no flags or unimplemented were set")
+	}
+
+	return appOpt, nil
+}
+
+// This is the refactored function
+func processCmdLineFlags() (AppOptType, error) {
+	var rootCmd = &cobra.Command{Use: "app"}
+
+	rootCmd.PersistentFlags().StringVar(&dbFileNameFlag, "db", "./data/todo.json", "Name of the database file")
+
+	var appOpt AppOptType = INVALID_APP_OPT
+
+	var listCmd = &cobra.Command{
+		Use:   "l",
+		Short: "List all the items in the database",
+		Run: func(cmd *cobra.Command, args []string) {
+			appOpt = LIST_DB_ITEM
+		},
+	}
+
+	var queryCmd = &cobra.Command{
+		Use:   "q",
+		Short: "Query an item in the database",
+		Run: func(cmd *cobra.Command, args []string) {
+			appOpt = QUERY_DB_ITEM
+			_, err := fmt.Sscan(args[0], &queryFlag)
+			if err != nil {
+				fmt.Println("Error: ", errors.New("query need a valid id"))
+			}
+		},
+	}
+
+	var addCmd = &cobra.Command{
+		Use:   "a",
+		Short: "Add an item to the database",
+		Run: func(cmd *cobra.Command, args []string) {
+			appOpt = ADD_DB_ITEM
+			addFlag = args[0]
+		},
+	}
+
+	var updateCmd = &cobra.Command{
+		Use:   "u",
+		Short: "Update an item in the database",
+		Run: func(cmd *cobra.Command, args []string) {
+			appOpt = UPDATE_DB_ITEM
+			updateFlag = args[0]
+		},
+	}
+
+	var deleteCmd = &cobra.Command{
+		Use:   "d",
+		Short: "Delete an item from the database",
+		Run: func(cmd *cobra.Command, args []string) {
+			appOpt = DELETE_DB_ITEM
+			_, err := fmt.Sscan(args[0], &deleteFlag)
+			if err != nil {
+				fmt.Println("Error: ", errors.New("delete need a valid id"))
+			}
+		},
+	}
+
+	var statusCmd = &cobra.Command{
+		Use:   "s",
+		Short: "Change item 'done' status to true or false",
+		Run: func(cmd *cobra.Command, args []string) {
+			itemStatus, err := strconv.ParseBool(args[0])
+			if err != nil {
+				fmt.Println("Error: ", errors.New("delete need a valid id"))
+
+			} else if args[1] == "q" {
+				itemStatusFlag = itemStatus
+
+				queryCmd.Run(cmd, args[2:])
+				if queryFlag != 0 {
+					appOpt = CHANGE_ITEM_STATUS
+				}
+
+			} else {
+				fmt.Println("Error: ", errors.New("-s option is only valid if the -q option is also provided"))
+			}
+		},
+	}
+
+	// itemStatusCmd.Flags().IntVar(&queryFlag, "q", 0, "Query an item in the database")
+
+	rootCmd.AddCommand(listCmd, queryCmd, addCmd, updateCmd, deleteCmd, statusCmd)
+
+	if err := rootCmd.Execute(); err != nil {
+		return appOpt, err
+	}
+
+	if appOpt == INVALID_APP_OPT || appOpt == NOT_IMPLEMENTED {
+		fmt.Println("Invalid option set or the desired option is not currently implemented")
+		rootCmd.Usage()
 		return appOpt, errors.New("no flags or unimplemented were set")
 	}
 
@@ -143,7 +262,7 @@ func main() {
 	//function in the db package
 	switch opts {
 	case LIST_DB_ITEM:
-		fmt.Println("Running QUERY_DB_ITEM...")
+		fmt.Println("Running LIST_DB_ITEM...")
 		todoList, err := todo.GetAllItems()
 		if err != nil {
 			fmt.Println("Error: ", err)
@@ -202,7 +321,12 @@ func main() {
 		//For the CHANGE_ITEM_STATUS extra credit you will also
 		//need to add some code here
 		fmt.Println("Running CHANGE_ITEM_STATUS...")
-		fmt.Println("Not implemented yet, but it can be for extra credit")
+		// fmt.Println("Not implemented yet, but it can be for extra credit")
+		err := todo.ChangeItemDoneStatus(queryFlag, itemStatusFlag)
+		if err != nil {
+			fmt.Println("Error: ", err)
+			break
+		}
 		fmt.Println("Ok")
 	default:
 		fmt.Println("INVALID_APP_OPT")

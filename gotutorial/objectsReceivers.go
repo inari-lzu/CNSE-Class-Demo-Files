@@ -60,7 +60,7 @@ func (c car) getModel() string {
 // the value of the model field, but since we are not using a pointer
 // receiver, the change is not reflected in the original struct.
 func (c car) setModelQuestionable(newModel string) {
-	c.model = newModel
+	c.model = newModel // it won't work since it is a copy but not ref
 }
 
 func RunReceiverTest() {

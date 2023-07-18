@@ -8,8 +8,9 @@ import "fmt"
 //to make them more powerful.  This can be used for object oriented programming in go
 
 type person struct {
-	name string
-	age  int
+	name    string
+	age     int
+	sayName func()
 }
 
 // You can create a new struct by using the name of the struct and then assigning the
@@ -20,12 +21,20 @@ func createStructTest() {
 	//Note in this case, Go assumes that the order of the values provided matches the
 	//order of the fields in the struct.  This is not a good practice, but its good to
 	//know
-	p1 := person{"Bob", 20}
+	p1 := person{name: "Bob", age: 20}
+	sh := func() {
+		p1ref := &p1
+		fmt.Println(p1ref.name)
+	}
+	p1.sayName = sh
+	p1.sayName()
+	p1.name = "BoBo"
+	p1.sayName()
 	fmt.Println(p1)
 
 	//This is a bit better, we are explicitly specifying the field names, so the order
 	//of the fields does not matter
-	p2 := person{name: "Alice", age: 30}
+	p2 := person{name: "Alice", age: 30, sayName: sh}
 	fmt.Println(p2)
 
 	//We can also create a struct with each value initialized to its zero value. Zero
@@ -50,8 +59,8 @@ func createStructPointerTest() {
 	//Note in this case, Go assumes that the order of the values provided matches the
 	//order of the fields in the struct.  This is not a good practice, but its good to
 	//know
-	p1 := &person{"Bob", 20}
-	fmt.Println(p1)
+	// p1 := &person{"Bob", 20}
+	// fmt.Println(p1)
 
 	//This is a bit better, we are explicitly specifying the field names, so the order
 	//of the fields does not matter
