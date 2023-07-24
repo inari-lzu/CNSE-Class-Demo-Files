@@ -1,4 +1,4 @@
-module drexel.edu/todo
+module drexel.edu/todo-api
 
 go 1.20
 
