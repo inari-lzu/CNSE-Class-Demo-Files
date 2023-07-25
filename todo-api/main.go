@@ -59,27 +59,29 @@ func main() {
 	r := gin.Default()
 	r.Use(cors.Default())
 
-	apiHandler, err := api.New()
+	apiHandler, err := api.NewVoteAPI()
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	r.GET("/todo", apiHandler.ListAllTodos)
-	r.POST("/todo", apiHandler.AddToDo)
-	r.PUT("/todo", apiHandler.UpdateToDo)
-	r.DELETE("/todo", apiHandler.DeleteAllToDo)
-	r.DELETE("/todo/:id", apiHandler.DeleteToDo)
-	r.GET("/todo/:id", apiHandler.GetToDo)
+	r.GET("/voters", apiHandler.ListAllVoters)
 
-	r.GET("/crash", apiHandler.CrashSim)
-	r.GET("/health", apiHandler.HealthCheck)
+	r.GET("/voters/:id", apiHandler.GetVoter)
+	r.POST("/voters/:id", apiHandler.AddVoter)
+
+	r.GET("/voters/:id/polls", apiHandler.GetVoterHistory)
+
+	r.GET("/voters/:id/polls/:pollid", apiHandler.GetVoterPoll)
+	r.POST("/voters/:id/polls/:pollid", apiHandler.AddVoterPoll)
+
+	r.GET("/voters/health", apiHandler.HealthCheck)
 
 	//We will now show a common way to version an API and add a new
 	//version of an API handler under /v2.  This new API will support
 	//a path parameter to search for todos based on a status
 	v2 := r.Group("/v2")
-	v2.GET("/todo", apiHandler.ListSelectTodos)
+	v2.GET("/crash", apiHandler.CrashSim)
 
 	serverPath := fmt.Sprintf("%s:%d", hostFlag, portFlag)
 	r.Run(serverPath)
