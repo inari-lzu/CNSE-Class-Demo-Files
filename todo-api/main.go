@@ -69,17 +69,18 @@ func main() {
 
 	r.GET("/voters/:id", apiHandler.GetVoter)
 	r.POST("/voters/:id", apiHandler.AddVoter)
+	r.PUT("/voters/:id", apiHandler.UpdateVoter)
+	r.DELETE("/voters/:id", apiHandler.DeleteVoter)
 
 	r.GET("/voters/:id/polls", apiHandler.GetVoterHistory)
 
 	r.GET("/voters/:id/polls/:pollid", apiHandler.GetVoterPoll)
 	r.POST("/voters/:id/polls/:pollid", apiHandler.AddVoterPoll)
+	r.PUT("/voters/:id/polls/:pollid", apiHandler.UpdateVoterPoll)
+	r.DELETE("/voters/:id/polls/:pollid", apiHandler.DeleteVoterPoll)
 
 	r.GET("/voters/health", apiHandler.HealthCheck)
 
-	//We will now show a common way to version an API and add a new
-	//version of an API handler under /v2.  This new API will support
-	//a path parameter to search for todos based on a status
 	v2 := r.Group("/v2")
 	v2.GET("/crash", apiHandler.CrashSim)
 
