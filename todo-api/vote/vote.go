@@ -1,4 +1,4 @@
-package db
+package vote
 
 import (
 	"encoding/json"
@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-type VoterPoll struct {
+type voterPoll struct {
 	PollID   uint      `json:"id"`
 	VoteDate time.Time `json:"date"`
 }
@@ -16,7 +16,7 @@ type Voter struct {
 	VoterID     uint        `json:"id"`
 	FirstName   string      `json:"firstName"`
 	LastName    string      `json:"lastName"`
-	VoteHistory []VoterPoll `json:"history"`
+	VoteHistory []voterPoll `json:"history"`
 }
 
 type VoterList struct {
@@ -71,42 +71,44 @@ func (vl *VoterList) GetVoter(id uint) (Voter, error) {
 	return voter, nil
 }
 
-func (vl *VoterList) GetVoterPoll(voterId uint, pollid uint) (VoterPoll, error) {
+func (vl *VoterList) GetVoterPoll(voterId uint, pollid uint) (voterPoll, error) {
 	voter, ok := vl.Voters[voterId]
 	if !ok {
-		return VoterPoll{}, errors.New("voter does not exist")
+		return voterPoll{}, errors.New("voter does not exist")
 	}
-	for _, voterPoll := range voter.VoteHistory {
-		if voterPoll.PollID == pollid {
-			return voterPoll, nil
+	for _, vp := range voter.VoteHistory {
+		if vp.PollID == pollid {
+			return vp, nil
 		}
 	}
-	return VoterPoll{}, errors.New("voter poll does not exist")
+	return voterPoll{}, errors.New("voter poll does not exist")
 }
 
-func (vl *VoterList) AddVoterPoll(voterId uint, voterPoll VoterPoll) error {
+func (vl *VoterList) AddVoterPoll(voterId uint, pollId uint) error {
+	newvp := voterPoll{PollID: pollId, VoteDate: time.Now()}
 	voter, ok := vl.Voters[voterId]
 	if !ok {
 		return errors.New("voter does not exist")
 	}
 	for _, vp := range voter.VoteHistory {
-		if voterPoll.PollID == vp.PollID {
+		if newvp.PollID == vp.PollID {
 			return errors.New("voter poll already exists")
 		}
 	}
-	voter.VoteHistory = append(voter.VoteHistory, voterPoll)
+	voter.VoteHistory = append(voter.VoteHistory, newvp)
 	vl.Voters[voterId] = voter
 	return nil
 }
 
-func (vl *VoterList) UpdateVoterPoll(voterId uint, voterPoll VoterPoll) error {
+func (vl *VoterList) UpdateVoterPoll(voterId uint, pollId uint) error {
+	newvp := voterPoll{PollID: pollId, VoteDate: time.Now()}
 	voter, ok := vl.Voters[voterId]
 	if !ok {
 		return errors.New("voter does not exist")
 	}
 	for i, vp := range voter.VoteHistory {
-		if voterPoll.PollID == vp.PollID {
-			voter.VoteHistory[i] = voterPoll
+		if newvp.PollID == vp.PollID {
+			voter.VoteHistory[i] = newvp
 			vl.Voters[voterId] = voter
 			return nil
 		}
@@ -119,8 +121,8 @@ func (vl *VoterList) DeleteVoterPoll(voterId uint, pollid uint) error {
 	if !ok {
 		return errors.New("voter does not exist")
 	}
-	for i, voterPoll := range voter.VoteHistory {
-		if voterPoll.PollID == pollid {
+	for i, vp := range voter.VoteHistory {
+		if vp.PollID == pollid {
 			voter.VoteHistory = append(voter.VoteHistory[:i], voter.VoteHistory[i+1:]...)
 			vl.Voters[voterId] = voter
 			return nil
