@@ -1,4 +1,4 @@
-package vote
+package voterList
 
 import (
 	"encoding/json"
@@ -30,49 +30,49 @@ func NewVoterList() (*VoterList, error) {
 	return voteList, nil
 }
 
-func (vl *VoterList) AddVoter(voter Voter) error {
-	_, ok := vl.Voters[voter.VoterID]
+func (v *VoterList) AddVoter(voter Voter) error {
+	_, ok := v.Voters[voter.VoterID]
 	if ok {
 		return errors.New("voter already exists")
 	}
-	vl.Voters[voter.VoterID] = voter
+	v.Voters[voter.VoterID] = voter
 	return nil
 }
 
-func (vl *VoterList) UpdateVoter(voter Voter) (Voter, error) {
-	v, ok := vl.Voters[voter.VoterID]
+func (v *VoterList) UpdateVoter(voter Voter) (Voter, error) {
+	vt, ok := v.Voters[voter.VoterID]
 	if !ok {
 		return Voter{}, errors.New("voter does not exist")
 	}
-	voter.VoteHistory = v.VoteHistory // only modify resource data
-	vl.Voters[voter.VoterID] = voter
+	voter.VoteHistory = vt.VoteHistory // only modify resource data
+	v.Voters[voter.VoterID] = voter
 	return voter, nil
 }
 
-func (vl *VoterList) DeleteVoter(id uint) error {
-	_, ok := vl.Voters[id]
+func (v *VoterList) DeleteVoter(id uint) error {
+	_, ok := v.Voters[id]
 	if !ok {
 		return errors.New("voter does not exist")
 	}
-	delete(vl.Voters, id)
+	delete(v.Voters, id)
 	return nil
 }
 
-func (vl *VoterList) Clear() error {
-	vl.Voters = make(map[uint]Voter)
+func (v *VoterList) Clear() error {
+	v.Voters = make(map[uint]Voter)
 	return nil
 }
 
-func (vl *VoterList) GetVoter(id uint) (Voter, error) {
-	voter, ok := vl.Voters[id]
+func (v *VoterList) GetVoter(id uint) (Voter, error) {
+	voter, ok := v.Voters[id]
 	if !ok {
 		return Voter{}, errors.New("voter does not exist")
 	}
 	return voter, nil
 }
 
-func (vl *VoterList) GetVoterPoll(voterId uint, pollid uint) (voterPoll, error) {
-	voter, ok := vl.Voters[voterId]
+func (v *VoterList) GetVoterPoll(voterId uint, pollid uint) (voterPoll, error) {
+	voter, ok := v.Voters[voterId]
 	if !ok {
 		return voterPoll{}, errors.New("voter does not exist")
 	}
@@ -84,9 +84,8 @@ func (vl *VoterList) GetVoterPoll(voterId uint, pollid uint) (voterPoll, error) 
 	return voterPoll{}, errors.New("voter poll does not exist")
 }
 
-func (vl *VoterList) AddVoterPoll(voterId uint, pollId uint) error {
-	newvp := voterPoll{PollID: pollId, VoteDate: time.Now()}
-	voter, ok := vl.Voters[voterId]
+func (v *VoterList) AddVoterPoll(voterId uint, newvp voterPoll) error {
+	voter, ok := v.Voters[voterId]
 	if !ok {
 		return errors.New("voter does not exist")
 	}
@@ -96,61 +95,60 @@ func (vl *VoterList) AddVoterPoll(voterId uint, pollId uint) error {
 		}
 	}
 	voter.VoteHistory = append(voter.VoteHistory, newvp)
-	vl.Voters[voterId] = voter
+	v.Voters[voterId] = voter
 	return nil
 }
 
-func (vl *VoterList) UpdateVoterPoll(voterId uint, pollId uint) error {
-	newvp := voterPoll{PollID: pollId, VoteDate: time.Now()}
-	voter, ok := vl.Voters[voterId]
+func (v *VoterList) UpdateVoterPoll(voterId uint, newvp voterPoll) error {
+	voter, ok := v.Voters[voterId]
 	if !ok {
 		return errors.New("voter does not exist")
 	}
 	for i, vp := range voter.VoteHistory {
 		if newvp.PollID == vp.PollID {
 			voter.VoteHistory[i] = newvp
-			vl.Voters[voterId] = voter
+			v.Voters[voterId] = voter
 			return nil
 		}
 	}
 	return errors.New("voter poll does not exist")
 }
 
-func (vl *VoterList) DeleteVoterPoll(voterId uint, pollid uint) error {
-	voter, ok := vl.Voters[voterId]
+func (v *VoterList) DeleteVoterPoll(voterId uint, pollid uint) error {
+	voter, ok := v.Voters[voterId]
 	if !ok {
 		return errors.New("voter does not exist")
 	}
 	for i, vp := range voter.VoteHistory {
 		if vp.PollID == pollid {
 			voter.VoteHistory = append(voter.VoteHistory[:i], voter.VoteHistory[i+1:]...)
-			vl.Voters[voterId] = voter
+			v.Voters[voterId] = voter
 			return nil
 		}
 	}
 	return errors.New("voter poll does not exist")
 }
 
-func (vl *VoterList) GetAllVoters() ([]Voter, error) {
-	var voterList []Voter
-	for _, voter := range vl.Voters {
-		voterList = append(voterList, voter)
+func (v *VoterList) GetAllVoters() ([]Voter, error) {
+	var vl []Voter
+	for _, voter := range v.Voters {
+		vl = append(vl, voter)
 	}
-	return voterList, nil
+	return vl, nil
 }
 
-func (vl *VoterList) PrintVoter(voter Voter) {
+func (v *VoterList) PrintVoter(voter Voter) {
 	jsonBytes, _ := json.MarshalIndent(voter, "", "  ")
 	fmt.Println(string(jsonBytes))
 }
 
-func (vl *VoterList) PrintAllVoters(voterList []Voter) {
-	for _, voter := range voterList {
-		vl.PrintVoter(voter)
+func (v *VoterList) PrintAllVoters(vl []Voter) {
+	for _, voter := range vl {
+		v.PrintVoter(voter)
 	}
 }
 
-func (vl *VoterList) JsonToVoter(jsonString string) (Voter, error) {
+func (v *VoterList) JsonToVoter(jsonString string) (Voter, error) {
 	var voter Voter
 	err := json.Unmarshal([]byte(jsonString), &voter)
 	if err != nil {

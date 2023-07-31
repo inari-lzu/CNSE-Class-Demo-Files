@@ -75,8 +75,8 @@ func main() {
 	r.GET("/voters/:id/polls", apiHandler.GetVoterHistory)
 
 	r.GET("/voters/:id/polls/:pollid", apiHandler.GetVoterPoll)
-	r.POST("/voters/:id/polls/:pollid", apiHandler.AddVoterPoll)
-	r.PUT("/voters/:id/polls/:pollid", apiHandler.UpdateVoterPoll)
+	r.POST("/voters/:id/polls/", apiHandler.AddVoterPoll)
+	r.PUT("/voters/:id/polls/", apiHandler.UpdateVoterPoll)
 	r.DELETE("/voters/:id/polls/:pollid", apiHandler.DeleteVoterPoll)
 
 	r.GET("/voters/health", apiHandler.HealthCheck)

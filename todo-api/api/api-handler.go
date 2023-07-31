@@ -6,29 +6,29 @@ import (
 	"strconv"
 	"time"
 
-	"drexel.edu/todo-api/vote"
+	"drexel.edu/todo-api/voterList"
 	"github.com/gin-gonic/gin"
 )
 
 type VoteAPI struct {
-	vote        *vote.VoterList
+	voterList   *voterList.VoterList
 	bootTime    time.Time
 	successes   int
 	badRequests int
 }
 
 func NewVoteAPI() (*VoteAPI, error) {
-	dbHandler, err := vote.NewVoterList()
+	dbHandler, err := voterList.NewVoterList()
 	if err != nil {
 		return nil, err
 	}
 
-	return &VoteAPI{vote: dbHandler, bootTime: time.Now(), successes: 0, badRequests: 0}, nil
+	return &VoteAPI{voterList: dbHandler, bootTime: time.Now(), successes: 0, badRequests: 0}, nil
 }
 
 func (va *VoteAPI) ListAllVoters(c *gin.Context) {
 
-	voterList, err := va.vote.GetAllVoters()
+	vl, err := va.voterList.GetAllVoters()
 	if err != nil {
 		log.Println("Error Getting All Voters: ", err)
 		va.badRequests++
@@ -36,11 +36,11 @@ func (va *VoteAPI) ListAllVoters(c *gin.Context) {
 		return
 	}
 
-	if voterList == nil {
-		voterList = make([]vote.Voter, 0)
+	if vl == nil {
+		vl = make([]voterList.Voter, 0)
 	}
 
-	c.JSON(http.StatusOK, voterList)
+	c.JSON(http.StatusOK, vl)
 	va.successes++
 }
 
@@ -53,7 +53,7 @@ func (va *VoteAPI) GetVoter(c *gin.Context) {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
-	voter, err := va.vote.GetVoter(uint(id64))
+	voter, err := va.voterList.GetVoter(uint(id64))
 	if err != nil {
 		log.Println("voter not found: ", err)
 		va.badRequests++
@@ -75,7 +75,7 @@ func (va *VoteAPI) AddVoter(c *gin.Context) {
 		return
 	}
 
-	var voter vote.Voter
+	var voter voterList.Voter
 	if err := c.ShouldBindJSON(&voter); err != nil {
 		log.Println("Error binding JSON: ", err)
 		va.badRequests++
@@ -90,7 +90,7 @@ func (va *VoteAPI) AddVoter(c *gin.Context) {
 		return
 	}
 
-	if err := va.vote.AddVoter(voter); err != nil {
+	if err := va.voterList.AddVoter(voter); err != nil {
 		log.Println("Error adding voter: ", err)
 		va.badRequests++
 		c.AbortWithStatus(http.StatusInternalServerError)
@@ -102,14 +102,14 @@ func (va *VoteAPI) AddVoter(c *gin.Context) {
 }
 
 func (va *VoteAPI) UpdateVoter(c *gin.Context) {
-	var v vote.Voter
+	var v voterList.Voter
 	if err := c.ShouldBindJSON(&v); err != nil {
 		log.Println("Error binding JSON: ", err)
 		va.badRequests++
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
-	voter, err := va.vote.UpdateVoter(v)
+	voter, err := va.voterList.UpdateVoter(v)
 	if err != nil {
 		log.Println("Error updating voter: ", err)
 		va.badRequests++
@@ -130,7 +130,7 @@ func (va *VoteAPI) GetVoterHistory(c *gin.Context) {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
-	voter, err := va.vote.GetVoter(uint(id64))
+	voter, err := va.voterList.GetVoter(uint(id64))
 	if err != nil {
 		log.Println("voter not found: ", err)
 		va.badRequests++
@@ -160,7 +160,7 @@ func (va *VoteAPI) GetVoterPoll(c *gin.Context) {
 		return
 	}
 
-	voterPoll, err := va.vote.GetVoterPoll(uint(voterId64), uint(voterPollId64))
+	voterPoll, err := va.voterList.GetVoterPoll(uint(voterId64), uint(voterPollId64))
 	if err != nil {
 		log.Println("voter poll not found: ", err)
 		va.badRequests++
@@ -181,23 +181,27 @@ func (va *VoteAPI) AddVoterPoll(c *gin.Context) {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
-
-	voterPollIdS := c.Param("pollid")
-	voterPollId64, err := strconv.ParseUint(voterPollIdS, 10, 32)
-	if err != nil {
-		log.Println("Error converting pollid to int64: ", err)
+	var v voterList.Voter
+	if err := c.ShouldBindJSON(&v); err != nil {
+		log.Println("Error binding JSON: ", err)
 		va.badRequests++
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
-
-	if err := va.vote.AddVoterPoll(uint(voterId64), uint(voterPollId64)); err != nil {
+	if len(v.VoteHistory) != 1 {
+		log.Println("len(v.VoteHistory) != 1")
+		va.badRequests++
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+	vp := v.VoteHistory[0]
+	if err := va.voterList.AddVoterPoll(uint(voterId64), vp); err != nil {
 		log.Println("Error adding voter poll: ", err)
 		va.badRequests++
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
-	c.Status(http.StatusOK)
+	c.JSON(http.StatusOK, vp)
 	va.successes++
 }
 
@@ -210,23 +214,27 @@ func (va *VoteAPI) UpdateVoterPoll(c *gin.Context) {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
-
-	voterPollIdS := c.Param("pollid")
-	voterPollId64, err := strconv.ParseUint(voterPollIdS, 10, 32)
-	if err != nil {
-		log.Println("Error converting pollid to int64: ", err)
+	var v voterList.Voter
+	if err := c.ShouldBindJSON(&v); err != nil {
+		log.Println("Error binding JSON: ", err)
 		va.badRequests++
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
-
-	if err := va.vote.UpdateVoterPoll(uint(voterId64), uint(voterPollId64)); err != nil {
+	if len(v.VoteHistory) != 1 {
+		log.Println("len(v.VoteHistory) != 1")
+		va.badRequests++
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+	vp := v.VoteHistory[0]
+	if err := va.voterList.UpdateVoterPoll(uint(voterId64), vp); err != nil {
 		log.Println("Error updating voter poll: ", err)
 		va.badRequests++
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
-	c.Status(http.StatusOK)
+	c.JSON(http.StatusOK, vp)
 	va.successes++
 }
 
@@ -240,7 +248,7 @@ func (va *VoteAPI) DeleteVoter(c *gin.Context) {
 		return
 	}
 
-	if err := va.vote.DeleteVoter(uint(voterId64)); err != nil {
+	if err := va.voterList.DeleteVoter(uint(voterId64)); err != nil {
 		log.Println("Error deleting voter: ", err)
 		va.badRequests++
 		c.AbortWithStatus(http.StatusInternalServerError)
@@ -268,7 +276,7 @@ func (va *VoteAPI) DeleteVoterPoll(c *gin.Context) {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
-	if err := va.vote.DeleteVoterPoll(uint(voterId64), uint(voterPollId64)); err != nil {
+	if err := va.voterList.DeleteVoterPoll(uint(voterId64), uint(voterPollId64)); err != nil {
 		log.Println("Error deleting voter poll: ", err)
 		va.badRequests++
 		c.AbortWithStatus(http.StatusInternalServerError)
