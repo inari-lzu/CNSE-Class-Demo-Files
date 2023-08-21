@@ -12,7 +12,7 @@ COPY . .
 RUN go mod download
 
 # Build
-RUN CGO_ENABLED=0 GOOS=linux go build -o /todo-api
+RUN CGO_ENABLED=0 GOOS=linux go build -o /voter-api
 
 
 FROM scratch AS run-stage
@@ -21,7 +21,7 @@ FROM scratch AS run-stage
 WORKDIR /
 
 # Copy binary from build stage
-COPY --from=build-stage /todo-api /todo-api
+COPY --from=build-stage /voter-api /voter-api
 
 # Expose port
 EXPOSE 1080
@@ -31,4 +31,4 @@ EXPOSE 1080
 ENV REDIS_URL=host.docker.internal:6379
 
 # Run
-CMD ["/todo-api"]
+CMD ["/voter-api"]

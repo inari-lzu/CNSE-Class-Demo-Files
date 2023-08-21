@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 	"time"
-	"vote-api/db"
+	"voter-api/db"
 
 	"github.com/gin-gonic/gin"
 )

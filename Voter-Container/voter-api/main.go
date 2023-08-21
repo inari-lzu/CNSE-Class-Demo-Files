@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"vote-api/api"
+	"voter-api/api"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
