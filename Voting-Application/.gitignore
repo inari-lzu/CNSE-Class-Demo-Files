@@ -1,0 +1,5 @@
+*.aof
+*.rdb
+*.manifes
+appendonlydir
+.vscode

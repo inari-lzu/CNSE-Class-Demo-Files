@@ -1,0 +1,96 @@
+version: '3.8'
+services:
+  cache:
+    image: redis/redis-stack:latest
+    container_name: voter-cache
+    restart: on-failure
+    expose:
+      - 6379
+    ports:
+      - '${REDIS_GUI_PORT}:8001'
+    volumes:
+      - ./cache-data:/data
+    environment:
+      - REDIS_ARGS=--appendonly yes
+    networks:
+      - backend
+      - frontend # should delete!
+
+  # cache-init:
+  #   image: redis/redis-stack:latest
+  #   container_name: voter-cache-init
+  #   volumes:
+  #     - ./cache-data:/data
+  #   environment:
+  #     - REDIS_ARGS=--appendonly yes
+  #   command: /data/load-redis.sh cache
+  #   networks:
+  #     - backend
+  #   depends_on:
+  #     cache:
+  #       condition: service_started
+
+  voter-api:
+    build:
+      context: ./
+      dockerfile: Dockerfile.voter
+    image: voter-api:v1
+    container_name: voter-api
+    restart: always
+    ports:
+      - '${VOTER_PORT}:1080'
+    depends_on:
+      cache:
+        condition: service_started
+    environment:
+      - REDIS_URL=cache:6379
+    networks:
+      - frontend
+      - backend
+
+  poll-api:
+    build:
+      context: ./
+      dockerfile: Dockerfile.poll
+    image: poll-api:v1
+    container_name: poll-api
+    restart: always
+    ports:
+      - '${POLL_PORT}:1081'
+    depends_on:
+      cache:
+        condition: service_started
+    environment:
+      - REDIS_URL=cache:6379
+    networks:
+      - frontend
+      - backend
+
+  votes-api:
+    build:
+      context: ./
+      dockerfile: Dockerfile.votes
+    image: votes-api:v1
+    container_name: votes-api
+    restart: always
+    ports:
+      - '${VOTES_PORT}:80'
+    depends_on:
+      cache:
+        condition: service_started
+    environment:
+      - REDIS_URL=cache:6379
+      - HOST_NAME=${HOST_NAME}
+      - VOTER_API_INTERNAL=http://voter-api:1080
+      - POLL_API_INTERNAL=http://poll-api:1081
+      - VOTER_API_EXTERAL=${HOST_NAME}:${VOTER_PORT}
+      - POLL_API_EXTERAL=${HOST_NAME}:${POLL_PORT}
+    networks:
+      - frontend
+      - backend
+
+networks:
+  frontend:
+    internal: false
+  backend:
+    internal: true
