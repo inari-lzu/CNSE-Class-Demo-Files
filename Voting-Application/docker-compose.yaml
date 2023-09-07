@@ -2,33 +2,19 @@ version: '3.8'
 services:
   cache:
     image: redis/redis-stack:latest
-    container_name: voter-cache
+    container_name: cache
     restart: on-failure
     expose:
       - 6379
     ports:
-      - '${REDIS_GUI_PORT}:8001'
+      - '${REDIS_GUI_PORT}:8001' # this config is used for testing, it should be removed in production
     volumes:
       - ./cache-data:/data
     environment:
       - REDIS_ARGS=--appendonly yes
     networks:
       - backend
-      - frontend # should delete!
-
-  # cache-init:
-  #   image: redis/redis-stack:latest
-  #   container_name: voter-cache-init
-  #   volumes:
-  #     - ./cache-data:/data
-  #   environment:
-  #     - REDIS_ARGS=--appendonly yes
-  #   command: /data/load-redis.sh cache
-  #   networks:
-  #     - backend
-  #   depends_on:
-  #     cache:
-  #       condition: service_started
+      - frontend # this config is used for testing, it should be removed in production
 
   voter-api:
     build:

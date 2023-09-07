@@ -42,7 +42,7 @@ func NewVoter() Voter {
 
 func (vr Voter) UpdateVoterInfo(vt Voter) (Voter, error) {
 	vt.VoterID = vr.VoterID
-	vt.VoteHistory = vr.VoteHistory // we don't expect to voteHistory
+	vt.VoteHistory = vr.VoteHistory // we don't expect to change voteHistory in updating
 	return vt, nil
 }
 

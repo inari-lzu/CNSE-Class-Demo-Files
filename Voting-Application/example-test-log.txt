@@ -1,0 +1,161 @@
+<<<--- Reset Database
+HTTP/1.1 200 OK
+Date: Thu, 07 Sep 2023 03:38:42 GMT
+Content-Length: 0
+
+HTTP/1.1 200 OK
+Date: Thu, 07 Sep 2023 03:38:42 GMT
+Content-Length: 0
+
+HTTP/1.1 200 OK
+Date: Thu, 07 Sep 2023 03:38:42 GMT
+Content-Length: 0
+
+<<<--- Test Section 1 - Poll API ---------------------------------
+
+--->>> test 1.1 create poll_1
+{"poll":"/polls/1","title":"pet type","question":"which type of pet do you like?","options":["/polls/1/options/1","/polls/1/options/2"]}
+
+--->>> test 1.2 get poll_1
+{"poll":"/polls/1","title":"pet type","question":"which type of pet do you like?","options":["/polls/1/options/1","/polls/1/options/2"]}
+
+--->>> test 1.3 update poll_1
+{"poll":"/polls/1","title":"animal type","question":"which type of animal do you like?","options":["/polls/1/options/1","/polls/1/options/2"]}
+
+--->>> test 1.4 delete poll_1
+HTTP/1.1 200 OK
+Date: Thu, 07 Sep 2023 03:38:42 GMT
+Content-Length: 0
+
+--->>> test 1.5 create poll_2
+{"poll":"/polls/2","title":"paper type","question":"paper down or paper up?","options":["/polls/2/options/1","/polls/2/options/2"]}
+
+--->>> test 1.6 add option_3
+{"option":"/polls/2/options/3","value":"whatever"}
+
+--->>> test 1.7 get option_3
+{"option":"/polls/2/options/3","value":"whatever"}
+
+--->>> test 1.8 update option_3
+{"option":"/polls/2/options/3","value":"I don't use paper"}
+
+--->>> test 1.9 delete all the options of poll_2
+HTTP/1.1 200 OK
+Date: Thu, 07 Sep 2023 03:38:42 GMT
+Content-Length: 0
+
+--->>> test 1.10 get all the options of poll_2
+[]
+
+--->>> test 1.11 delete all the polls
+HTTP/1.1 200 OK
+Date: Thu, 07 Sep 2023 03:38:42 GMT
+Content-Length: 0
+
+--->>> test 1.12 get all the polls
+[]
+
+--->>> test 1.13 check poll-api health
+{"api_name":"poll-api","api_uptime":"26.046160461s","gin_version":"v1.9.1","status":200,"total_api_calls":13,"total_api_calls_succeed":13,"total_api_calls_with_errors":0}
+
+<<<--- Test Section 2 - Voter API ---------------------------------
+
+--->>> test 2.1 create voter_1
+{"voter":"/voters/1","firstName":"Mike","lastName":""}
+
+--->>> test 2.2 get voter_1
+{"voter":"/voters/1","firstName":"Mike","lastName":""}
+
+--->>> test 2.3 update voter_1
+{"voter":"/voters/1","firstName":"Mike","lastName":"F"}
+
+--->>> test 2.4 delete voter_1
+HTTP/1.1 200 OK
+Date: Thu, 07 Sep 2023 03:38:42 GMT
+Content-Length: 0
+
+--->>> test 2.5 create voter_2
+{"voter":"/voters/2","firstName":"Xiao","lastName":"Fang"}
+
+--->>> test 2.6 add voterPoll record
+{"voterPoll":"/voters/2/polls/1","date":"2021-07-25 16:47:26.3570871 -0400 -0400"}
+
+--->>> test 2.7 get voterPoll record
+{"voterPoll":"/voters/2/polls/1","date":"2021-07-25 16:47:26.3570871 -0400 -0400"}
+
+--->>> test 2.8 update voterPoll record
+{"voterPoll":"/voters/2/polls/1","date":"2023-07-25 16:47:26.3570871 -0400 -0400"}
+
+--->>> test 2.9 delete the voteHistory of voter_2
+HTTP/1.1 200 OK
+Date: Thu, 07 Sep 2023 03:38:42 GMT
+Content-Length: 0
+
+--->>> test 2.10 get the voteHistory of voter_2
+[]
+
+--->>> test 2.11 delete all the voters
+HTTP/1.1 200 OK
+Date: Thu, 07 Sep 2023 03:38:42 GMT
+Content-Length: 0
+
+--->>> test 2.12 get all the voters
+[]
+
+--->>> test 2.13 check voter-api health
+{"api_name":"voter-api","api_uptime":"26.822115564s","gin_version":"v1.9.1","status":200,"total_api_calls":13,"total_api_calls_succeed":13,"total_api_calls_with_errors":0}
+
+<<<--- Test Section 3 - Votes API ---------------------------------
+
+--->>> test 3.1 vote can not be create if the associated voter does not exist
+{"error":"associated Voter doesn't existed"}
+
+--->>> test 3.2 vote can not be create if the associated Poll does not exist
+{"voter":"/voters/1","firstName":"Xiao","lastName":"Fang"}
+{"error":"associated Poll doesn't existed"}
+
+--->>> test 3.3 vote can not be create if the associated vote option does not exist
+{"poll":"/polls/2","title":"paper type","question":"paper down or paper up?","options":["/polls/2/options/1","/polls/2/options/2"]}
+{"error":"associated vote option doesn't existed"}
+
+--->>> test 3.4 vote can be created if all the associated entities exist
+{"vote":"localhost/votes/1","voter":"localhost:1080/voters/1","voterPoll":"localhost:1080/voters/1/polls/2","poll":"localhost:1081/polls/2","choice":"localhost:1081/polls/2/options/2"}
+
+--->>> test 3.5 one voter can only has one voting in a poll
+{"error":"Adding voterPoll to associate voter's voting history fail. One voter can only has one voting in a poll."}
+
+--->>> test 3.6 one voter can change their opinion by updating the vote
+{"vote":"localhost/votes/1","voter":"localhost:1080/voters/1","voterPoll":"localhost:1080/voters/1/polls/2","poll":"localhost:1081/polls/2","choice":"localhost:1081/polls/2/options/1"}
+
+--->>> test 3.7 get the vote_1
+{"vote":"localhost/votes/1","voter":"localhost:1080/voters/1","voterPoll":"localhost:1080/voters/1/polls/2","poll":"localhost:1081/polls/2","choice":"localhost:1081/polls/2/options/1"}--->>> test 3.8 delete the vote_1   
+HTTP/1.1 200 OK
+Date: Thu, 07 Sep 2023 03:38:42 GMT
+Content-Length: 0
+
+--->>> test 3.9 create vote_2
+{"vote":"localhost/votes/2","voter":"localhost:1080/voters/1","voterPoll":"localhost:1080/voters/1/polls/2","poll":"localhost:1081/polls/2","choice":"localhost:1081/polls/2/options/1"}
+
+--->>> test 3.10 delete all the votes
+HTTP/1.1 200 OK
+Date: Thu, 07 Sep 2023 03:38:42 GMT
+Content-Length: 0
+
+--->>> test 3.9 get all the votes
+[]
+
+--->>> test 3.10 check votes-api health
+{"api_name":"votes-api","api_uptime":"26.57278239s","gin_version":"v1.9.1","status":200,"total_api_calls":12,"total_api_calls_succeed":8,"total_api_calls_with_errors":4}
+
+<<<--- Reset Database Again
+HTTP/1.1 200 OK
+Date: Thu, 07 Sep 2023 03:38:42 GMT
+Content-Length: 0
+
+HTTP/1.1 200 OK
+Date: Thu, 07 Sep 2023 03:38:42 GMT
+Content-Length: 0
+
+HTTP/1.1 200 OK
+Date: Thu, 07 Sep 2023 03:38:42 GMT
+Content-Length: 0

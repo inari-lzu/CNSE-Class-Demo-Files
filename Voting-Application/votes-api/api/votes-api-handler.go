@@ -83,7 +83,6 @@ func (api *VoteAPI) ListAllVotes(c *gin.Context) {
 }
 
 func (api *VoteAPI) DeleteAllVotes(c *gin.Context) {
-	// delete all associated vote history
 	voteList, err := api.votes.All()
 	if err != nil {
 		log.Println("Error Getting All Votes: ", err)
@@ -101,12 +100,6 @@ func (api *VoteAPI) DeleteAllVotes(c *gin.Context) {
 		}
 	}
 
-	if err != nil {
-		log.Println("Error deleting All Votes: ", err)
-		api.badRequests++
-		c.AbortWithStatus(http.StatusInternalServerError)
-		return
-	}
 	c.Status(http.StatusOK)
 	api.successes++
 }
@@ -133,6 +126,7 @@ func (api *VoteAPI) GetVote(c *gin.Context) {
 }
 
 func (api *VoteAPI) validateVoteLinks(links vote.Links) error {
+	// exam whether all the associate entities existed
 	checkVoterExist, err := api.apiClient.R().Get(links.Voter)
 	if err != nil || checkVoterExist.StatusCode() != 200 {
 		return errors.New("associated Voter doesn't existed")
@@ -176,7 +170,6 @@ func (api *VoteAPI) AddVote(c *gin.Context) {
 		return
 	}
 
-	// exam whether associate entities existed
 	links := v.ToLinks(api.hostName, api.voterApiInternal, api.pollApiInternal)
 	err = api.validateVoteLinks(links)
 	if err != nil {
@@ -185,7 +178,6 @@ func (api *VoteAPI) AddVote(c *gin.Context) {
 		return
 	}
 
-	// add new vote into redis
 	err = api.votes.Add(v)
 	if err != nil {
 		log.Println("Error adding vote: ", err)
@@ -195,12 +187,13 @@ func (api *VoteAPI) AddVote(c *gin.Context) {
 		return
 	}
 
-	// try call voter-api to add voterPoll to associate voter's voting history
+	// call voter-api to add voterPoll to associate voter's voting history
 	addVoterPoll, err := api.apiClient.R().
 		SetBody(v.ToVoteHistoryRecord()).
 		Post(links.VoterPoll)
+
 	if err != nil || addVoterPoll.StatusCode() != 200 {
-		api.votes.Delete(v.VoteID) // undo add vote
+		api.votes.Delete(v.VoteID) // add VoterPoll fail, undo adding vote to redis
 		api.badRequests++
 		emsg := "Adding voterPoll to associate voter's voting history fail. One voter can only has one voting in a poll."
 		c.JSON(http.StatusInternalServerError, gin.H{"error": emsg})
@@ -220,7 +213,6 @@ func (api *VoteAPI) UpdateVote(c *gin.Context) {
 		return
 	}
 
-	// exam whether associate entities existed
 	links := v.ToLinks(api.hostName, api.voterApiInternal, api.pollApiInternal)
 	err := api.validateVoteLinks(links)
 	if err != nil {
@@ -250,7 +242,7 @@ func (api *VoteAPI) UpdateVote(c *gin.Context) {
 		SetBody(v.ToVoteHistoryRecord()).
 		Put(links.VoterPoll)
 	if err != nil || updateVoterPoll.StatusCode() != 200 {
-		api.votes.Update(prev, vote.Vote.Update) // undo update
+		api.votes.Update(prev, vote.Vote.Update) // updating by voter-api fail, undo updating redis
 		api.badRequests++
 		emsg := "Updating voterPoll to associate voter's voting history fail"
 		c.JSON(http.StatusInternalServerError, gin.H{"error": emsg})
@@ -303,7 +295,7 @@ func (api *VoteAPI) safeDeleteVote(v vote.Vote, c *gin.Context) error {
 		SetBody(v.ToVoteHistoryRecord()).
 		Delete(links.VoterPoll)
 	if err != nil || deleteVoterPoll.StatusCode() != 200 {
-		api.votes.Add(v) // undo delete
+		api.votes.Add(v) // delete by voter-api fail, undo deleting through redis
 		return errors.New("deleting voterPoll from associate voter's voting history fail")
 	}
 	return nil

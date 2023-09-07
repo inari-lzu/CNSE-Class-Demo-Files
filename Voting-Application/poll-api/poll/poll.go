@@ -40,7 +40,7 @@ func NewPoll() Poll {
 }
 
 func (p Poll) Update(pl Poll) (Poll, error) {
-	pl.PollID = p.PollID
+	pl.PollID = p.PollID // PollOptions is also can be changed in updating
 	return pl, nil
 }
 
